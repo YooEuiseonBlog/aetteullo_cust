@@ -1,4 +1,5 @@
 import 'package:aetteullo_cust/provider/app_state_provider.dart';
+import 'package:aetteullo_cust/screen/basket/basket_screen.dart';
 import 'package:aetteullo_cust/screen/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -99,10 +100,10 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
           ActionButton(
             icon: Icons.shopping_cart_outlined,
             onPressed: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (_) => const BasketScreen()),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BasketScreen()),
+              );
             },
             badgeCnt: basketCount,
           ),

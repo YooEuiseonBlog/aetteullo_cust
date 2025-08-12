@@ -23,6 +23,13 @@ class OrderFormScreen extends StatefulWidget {
 }
 
 class _OrderFormScreenState extends State<OrderFormScreen> {
+  // ① 메모 옵션을 고정 배열로 보관
+  static const List<String> _memoOptions = [
+    '빠른배송 요청',
+    '문 앞 부탁드립니다',
+    '경비실에 맡겨주세요',
+  ];
+
   List<Map<String, dynamic>> _items = [];
   double get _totAmnt => _items.fold(
     0.0,
@@ -56,9 +63,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _items = widget.items;
-    });
+    _items = List.from(widget.items);
+    _selectedMemo ??= _memoOptions.first;
   }
 
   @override
@@ -87,21 +93,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     _zipCodeController.dispose();
     super.dispose();
   }
-
-  // void _openPostCode() async {
-  //   final DaumPostModel? daumPostModel = await Navigator.of(context)
-  //       .push<DaumPostModel>(
-  //         MaterialPageRoute(builder: (context) => const DaumPostWebview()),
-  //       );
-  //   if (daumPostModel != null) {
-  //     setState(() {
-  //       // 주소 수정이 완료되면, 선택된 주소를 텍스트 필드에 넣는다.
-  //       _mainAddressController.text = daumPostModel.address;
-  //       _zipCodeController.text = daumPostModel.zonecode;
-  //       _subAddressController.text = '';
-  //     });
-  //   }
-  // }
 
   Future<void> _searchAddr() async {
     final juso = await Navigator.push<Juso>(
@@ -431,15 +422,24 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                   setState(() => _isExpanded = expanded);
                 },
                 children: [
-                  ..._items.map((item) {
-                    return ItemCardV3(
-                      itemNm: item['itemNm'],
-                      mnfct: item['mnfct'],
-                      qty: item['bkQty'],
-                      price: item['price'] as double? ?? 0.0,
-                      image: item['image1'],
-                    );
-                  }),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      return ItemCardV3(
+                        itemNm: item['itemNm'],
+                        mnfct: item['mnfct'],
+                        qty: item['bkQty'],
+                        price: item['price'] as double? ?? 0.0,
+                        image: item['image1'],
+                      );
+                    },
+                    separatorBuilder: (context, index) {
+                      return Divider();
+                    },
+                  ),
                 ],
               ),
             ),
@@ -517,7 +517,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                   // ───────────────────────────────────
                   // 배송 요청사항 (제네릭 드롭다운)
                   _GenericDropdown<String>(
-                    items: const ['빠른배송 요청', '문 앞 부탁드립니다', '경비실에 맡겨주세요'],
+                    items: _memoOptions,
                     value: _selectedMemo,
                     itemLabel: (s) => s,
                     hintText: '배송요청사항 선택',
