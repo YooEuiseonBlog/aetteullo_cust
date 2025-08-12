@@ -1,6 +1,7 @@
 import 'package:aetteullo_cust/constant/constants.dart';
 import 'package:aetteullo_cust/function/device_utils.dart';
 import 'package:aetteullo_cust/function/dialog_utils.dart';
+import 'package:aetteullo_cust/screen/home/home_screen.dart';
 import 'package:aetteullo_cust/service/dio_service.dart';
 import 'package:aetteullo_cust/service/fcm_service.dart';
 import 'package:dio/dio.dart';
@@ -104,12 +105,12 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       // 5) 홈 화면으로 이동
-      // if (!mounted) return;
-      // Navigator.pushAndRemoveUntil(
-      //   context,
-      //   MaterialPageRoute(builder: (_) => const HomeScreen()),
-      //   (route) => false,
-      // );
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
     } on DioException catch (e) {
       debugPrint('$e');
       // 로그인 자체 실패
