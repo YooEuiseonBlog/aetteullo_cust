@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "181504891182",
+    "project_id": "tips-order-platform",
+    "storage_bucket": "tips-order-platform.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181504891182:android:604d592f64392e4ac742bf",
+        "android_client_info": {
+          "package_name": "com.example.aetteullo_cust"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcfRFNYguaSCkrt3wAXvetITO4LkzXGu4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181504891182:android:8f1b3b5bce1fe615c742bf",
+        "android_client_info": {
+          "package_name": "com.example.nev_on_customer_app_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcfRFNYguaSCkrt3wAXvetITO4LkzXGu4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181504891182:android:97dfbddb132877eac742bf",
+        "android_client_info": {
+          "package_name": "com.tipsvalley.industry.industry_app_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcfRFNYguaSCkrt3wAXvetITO4LkzXGu4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
