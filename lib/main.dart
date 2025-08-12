@@ -4,6 +4,7 @@ import 'package:aetteullo_cust/observer/route_observer.dart';
 import 'package:aetteullo_cust/provider/app_state_provider.dart';
 import 'package:aetteullo_cust/provider/com_code_provider.dart';
 import 'package:aetteullo_cust/provider/user_provider.dart';
+import 'package:aetteullo_cust/screen/home/home_screen.dart';
 import 'package:aetteullo_cust/screen/login/login_screen.dart';
 import 'package:aetteullo_cust/service/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -146,12 +147,7 @@ class MainApp extends StatelessWidget {
         home: homePage, // 자동로그인 분기 반영
         routes: {
           '/login': (context) => const LoginScreen(),
-          // '/home': (context) => const HomeScreen(),
-          // '/mypage': (context) => const MyPageScreen(),
-          // '/po': (context) => const OrderScreen(),
-          // '/so': (context) => const SoScreen(),
-          // '/deli': (context) => const ReqDeliListScreen(),
-          // '/chat': (context) => const ChatRoomScreen(),
+          '/home': (context) => const HomeScreen(),
         },
       ),
     );
