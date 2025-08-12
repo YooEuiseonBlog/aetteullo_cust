@@ -1,6 +1,8 @@
 import 'package:aetteullo_cust/function/format_utils.dart';
+import 'package:aetteullo_cust/model/address_model.dart';
 import 'package:aetteullo_cust/provider/model/user.dart';
 import 'package:aetteullo_cust/provider/user_provider.dart';
+import 'package:aetteullo_cust/screen/addr/search_addr_screen.dart';
 import 'package:aetteullo_cust/screen/order/order_list_screen.dart';
 import 'package:aetteullo_cust/screen/order/order_success_screen.dart';
 import 'package:aetteullo_cust/service/order_service.dart';
@@ -100,6 +102,19 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   //     });
   //   }
   // }
+
+  Future<void> _searchAddr() async {
+    final juso = await Navigator.push<Juso>(
+      context,
+      MaterialPageRoute(builder: (_) => SearchAddrScreen()),
+    );
+
+    if (juso != null) {
+      _zipCodeController.text = juso.zipNo;
+      _mainAddressController.text = juso.roadAddr;
+      _subAddressController.clear();
+    }
+  }
 
   void _submitOrder() async {
     if (_isLoading) return;
@@ -277,7 +292,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               flex: 1,
                               child: _buildTextField(
                                 controller: _zipCodeController,
-                                // onTap: _openPostCode,
+                                onTap: _searchAddr,
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -285,7 +300,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               flex: 2,
                               child: _buildTextField(
                                 controller: _mainAddressController,
-                                // onTap: _openPostCode,
+                                onTap: _searchAddr,
                               ),
                             ),
                           ],
