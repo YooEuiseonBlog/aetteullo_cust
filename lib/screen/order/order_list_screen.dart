@@ -275,7 +275,8 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
 
   // 1) _showItemSetSheet 내부: items에 'qty' 초기화
   void _showItemSetSheet(Map<String, dynamic> itemSet) {
-    final items = itemSet['items'] as List<Map<String, dynamic>>;
+    final items = (itemSet['items'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
     // 각 아이템 맵에 'qty' 키를 0으로 초기화
     for (var item in items) {
       item['qty'] = 0;
@@ -405,6 +406,9 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
                               );
                               setState(() {
                                 Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('장바구니에 담았습니다.')),
+                                );
                               });
                             },
                       style: ElevatedButton.styleFrom(
@@ -705,11 +709,10 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
         itemCount: _itemSetList.length,
         itemBuilder: (context, index) {
           final itemSet = _itemSetList[index];
+          final items = ((itemSet['items'] as List<dynamic>)
+              .cast<Map<String, dynamic>>());
           final String setName = itemSet['setNm'] as String? ?? '세트명 없음';
-          final String setImageUrl =
-              (itemSet['items'] as List<Map<String, dynamic>>).first['image1']
-                  as String? ??
-              '';
+          final String setImageUrl = items.first['image1'] as String? ?? '';
 
           return ItemSetCard(
             name: setName,

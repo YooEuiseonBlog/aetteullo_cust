@@ -125,15 +125,36 @@ class _SearchAddrScreenState extends State<SearchAddrScreen> {
                     return NoData();
                   }
                   // 실제 검색 결과 리스트
-                  return ListView.separated(
+                  return ListView.builder(
                     itemCount: _results.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final item = _results[index];
-                      return ListTile(
-                        title: Text(item.roadAddr),
-                        subtitle: Text(item.jibunAddr),
-                        onTap: () => Navigator.of(context).pop<Juso>(item),
+                      return Container(
+                        margin: EdgeInsets.only(bottom: 20),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 15,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.green),
+                        ),
+                        child: ListTile(
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('[${item.zipNo}]'),
+                              Text(
+                                item.roadAddr,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Divider(),
+                            ],
+                          ),
+                          subtitle: Text(item.jibunAddr),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 15),
+                          onTap: () => Navigator.of(context).pop<Juso>(item),
+                        ),
                       );
                     },
                   );

@@ -41,7 +41,7 @@ class MobileBottomNavigationBar extends StatelessWidget {
             Navigator.pushNamed(context, "/payment");
             break;
           case 4:
-            Navigator.pushNamed(context, "/myPage");
+            Navigator.pushNamed(context, "/mypage");
             break;
         }
       },
