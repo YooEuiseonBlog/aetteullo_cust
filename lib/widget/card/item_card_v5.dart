@@ -24,7 +24,7 @@ class ItemCardV5 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: !selected ? onTap : null,
+      onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
         // 플랫 디자인: 그림자 없이 연한 회색 테두리와 둥근 모서리

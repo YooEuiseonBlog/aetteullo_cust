@@ -167,4 +167,16 @@ class ItemService {
       rethrow;
     }
   }
+
+  Future<void> deleteItemSets({required List<int> setIds}) async {
+    try {
+      await DioCookieClient.http.delete(
+        '/mobile/item/set/list',
+        data: <String, dynamic>{'setIds': setIds},
+      );
+    } on DioException catch (e) {
+      debugPrint('deleteItemSet Dio error: ${e.message}');
+      rethrow;
+    }
+  }
 }
