@@ -1,6 +1,7 @@
 import 'package:aetteullo_cust/function/format_utils.dart';
 import 'package:aetteullo_cust/observer/route_observer.dart';
 import 'package:aetteullo_cust/screen/basket/basket_screen.dart';
+import 'package:aetteullo_cust/screen/search/search_screen.dart';
 import 'package:aetteullo_cust/service/basket_service.dart';
 import 'package:aetteullo_cust/service/common_service.dart';
 import 'package:aetteullo_cust/service/item_service.dart';
@@ -211,15 +212,32 @@ class _SearchRstScreenState extends State<SearchRstScreen> with RouteAware {
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       appBar: MobileAppBar(
-        title: Text(
-          '${widget.searchKeyword}',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SearchScreen(keyword: widget.searchKeyword),
+            ),
+          );
+        },
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.search),
+            SizedBox(width: 6),
+            Text(
+              '${widget.searchKeyword}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
         ),
         showNotification: false,
+        showSearch: false,
       ),
       bottomSheet: _buildBottomSheet(),
       bottomNavigationBar: const MobileBottomNavigationBar(),

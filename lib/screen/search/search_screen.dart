@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final String? keyword;
+  const SearchScreen({super.key, this.keyword});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -22,6 +23,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.text = widget.keyword ?? '';
     _loadRecentSearchesFromPrefs();
   }
 

@@ -13,6 +13,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? leading;
   final PreferredSizeWidget? bottom;
   final bool isHome;
+  final VoidCallback? onTap;
 
   const MobileAppBar({
     super.key,
@@ -23,6 +24,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showNotification = true,
     this.leading,
     this.isHome = false,
+    this.onTap,
   });
 
   Widget get _titleWidget {
@@ -68,7 +70,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                   );
                 }
               }
-            : null,
+            : onTap,
         child: _titleWidget,
       ),
       leading: leading,
