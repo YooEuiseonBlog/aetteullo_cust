@@ -69,6 +69,17 @@ class _UserInfoEditScreenState extends State<UserInfoEditScreen> {
       _showSnackBar('사용자명을 입력해주세요.');
       return;
     }
+
+    if (_passwordController.text.trim().isEmpty) {
+      _showSnackBar('비밀번호를 입력해주세요.');
+      return;
+    }
+
+    if (_confirmPasswordController.text.trim().isEmpty) {
+      _showSnackBar('비밀번호 확인을 입력해주세요.');
+      return;
+    }
+
     if (_phoneController.text.trim().isEmpty) {
       _showSnackBar('연락처를 입력해주세요.');
       return;

@@ -7,6 +7,7 @@ import 'package:aetteullo_cust/provider/user_provider.dart';
 import 'package:aetteullo_cust/screen/home/home_screen.dart';
 import 'package:aetteullo_cust/screen/login/login_screen.dart';
 import 'package:aetteullo_cust/screen/mypage/my_page_screen.dart';
+import 'package:aetteullo_cust/screen/payment/payment_screen.dart';
 import 'package:aetteullo_cust/service/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -150,6 +151,7 @@ class MainApp extends StatelessWidget {
           '/login': (_) => const LoginScreen(),
           '/home': (_) => const HomeScreen(),
           '/mypage': (_) => MyPageScreen(),
+          '/payment': (_) => PaymentScreen(),
         },
       ),
     );
