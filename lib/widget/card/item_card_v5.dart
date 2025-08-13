@@ -7,22 +7,25 @@ class ItemCardV5 extends StatelessWidget {
   final String imgUrl;
   final String setNm;
   final double cnt;
-  final VoidCallback? onClick;
-  final VoidCallback? onImageTap;
+  final bool selected;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const ItemCardV5({
     super.key,
     required this.setNm,
-    this.onClick,
-    this.onImageTap,
+    this.onTap,
     required this.imgUrl,
     required this.cnt,
+    this.onLongPress,
+    this.selected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onClick,
+      onTap: !selected ? onTap : null,
+      onLongPress: onLongPress,
       child: Container(
         // 플랫 디자인: 그림자 없이 연한 회색 테두리와 둥근 모서리
         decoration: BoxDecoration(
@@ -40,19 +43,26 @@ class ItemCardV5 extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   // 배경 이미지
-                  GestureDetector(
-                    onTap: onImageTap,
-                    child: CachedNetworkImage(
-                      imageUrl: imgUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          const Center(child: CircularProgressIndicator()),
-                      errorWidget: (_, __, ___) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.broken_image, size: 40),
-                      ),
+                  CachedNetworkImage(
+                    imageUrl: imgUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (_, __, ___) => Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.broken_image, size: 40),
                     ),
                   ),
+                  if (selected)
+                    Positioned(
+                      top: 5,
+                      right: 5,
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Colors.red,
+                        size: 30,
+                      ),
+                    ),
                   // 이미지 하단에 반투명 흰색 오버레이: setNm 텍스트
                   Positioned(
                     bottom: 0,
@@ -60,10 +70,10 @@ class ItemCardV5 extends StatelessWidget {
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
+                        horizontal: 10,
+                        vertical: 10,
                       ),
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -74,7 +84,7 @@ class ItemCardV5 extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.black87,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
@@ -83,8 +93,8 @@ class ItemCardV5 extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.blue,
+                              fontWeight: FontWeight.normal,
                             ),
                           ),
                         ],
@@ -94,10 +104,6 @@ class ItemCardV5 extends StatelessWidget {
                 ],
               ),
             ),
-
-            // ─── 카드 하단 여백 (필요 시 아이콘/버튼 추가 가능) ─────────────────────
-            // 단순 여백만 두어 플랫한 느낌을 유지
-            Container(height: 8, color: Colors.white),
           ],
         ),
       ),

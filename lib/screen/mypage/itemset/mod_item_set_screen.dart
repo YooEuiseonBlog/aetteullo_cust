@@ -83,7 +83,7 @@ class _ModItemSetScreenState extends State<ModItemSetScreen> {
       setState(() {}); // 포커스 변화 시 리빌드
     });
 
-    _itemSet = Map.from(_itemSet);
+    _itemSet = Map.from(widget.itemSet);
 
     // 세트 명 세팅
     _setNmController.text = widget.itemSet['setNm'] as String? ?? '';

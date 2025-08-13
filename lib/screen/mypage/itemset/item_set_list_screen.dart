@@ -18,12 +18,17 @@ class _ItemSetListScreenState extends State<ItemSetListScreen> {
   final ItemService _itemService = ItemService();
   List<Map<String, dynamic>> _itemSetList = [];
 
+  List<Map<String, dynamic>> get _selectedItemSetList =>
+      _itemSetList.where((its) => (its['selected'] as bool)).toList();
+
   Future<void> _getItemSetList() async {
     try {
       final responseList = await _itemService.getItemSetList(
         setNm: _setItemNmController.text.trim(),
       );
-      _itemSetList = responseList;
+      _itemSetList = responseList
+          .map((itemset) => {...itemset, 'selected': false})
+          .toList();
     } catch (e) {
       _itemSetList = [];
       debugPrint('_getItemSetList error: $e');
@@ -32,10 +37,47 @@ class _ItemSetListScreenState extends State<ItemSetListScreen> {
     }
   }
 
+  Widget _bottomSheet() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      height: 80,
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 8,
+            color: Colors.black12,
+            offset: Offset(0, -2),
+          ),
+        ],
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.delete, color: Colors.red),
+          Text(
+            '선택된 세트: ',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+          ),
+          Text('test'),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _getItemSetList();
+  }
+
+  @override
+  void dispose() {
+    _setItemNmController.dispose();
+    super.dispose();
   }
 
   @override
@@ -108,8 +150,9 @@ class _ItemSetListScreenState extends State<ItemSetListScreen> {
                   return ItemCardV5(
                     imgUrl: imgUrl, // 수정: 첫 번째 아이템 이미지 사용
                     setNm: itemSet['setNm'] as String? ?? '',
+                    selected: itemSet['selected'],
                     cnt: items.length.toDouble(),
-                    onImageTap: () async {
+                    onTap: () async {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -117,6 +160,11 @@ class _ItemSetListScreenState extends State<ItemSetListScreen> {
                         ),
                       );
                       await _getItemSetList();
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        itemSet['selected'] = !itemSet['selected'];
+                      });
                     },
                   );
                 },
@@ -139,6 +187,7 @@ class _ItemSetListScreenState extends State<ItemSetListScreen> {
         tooltip: '세트 아이템 추가',
         child: const Icon(Icons.add),
       ),
+      bottomSheet: _bottomSheet(),
       bottomNavigationBar: const MobileBottomNavigationBar(),
     );
   }
