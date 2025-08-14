@@ -12,6 +12,7 @@ import 'package:aetteullo_cust/service/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:provider/provider.dart';
 
@@ -111,6 +112,7 @@ class MainApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         // 2. 지원할 로케일 지정
         supportedLocales: const [Locale('en', 'US'), Locale('ko', 'KR')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         themeMode: ThemeMode.light, // 다크모드 무시
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(

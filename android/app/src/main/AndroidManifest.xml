@@ -1,4 +1,72 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <!-- ✅ 패키지 가시성: 결제/보안/지갑/뱅크 관련 최소 목록 -->
+    <queries>
+        <!-- 간편결제/결제 -->
+        <package android:name="com.kakaopay.app" />
+        <package android:name="viva.republica.toss" />
+        <package android:name="com.nhnent.payapp" />              <!-- PAYCO -->
+        <package android:name="com.lottemembers.android" />        <!-- LPAY -->
+        <package android:name="com.samsung.android.spay" />        <!-- 삼성페이 -->
+        <package android:name="com.samsung.android.spaylite" />    <!-- 삼성페이 미니 -->
+        <package android:name="com.lge.lgpay" />                   <!-- LG Pay -->
+        <package android:name="com.ssg.serviceapp.android.egiftcertificate" /> <!-- SSGPAY? (확인 필요) -->
+
+        <!-- 카드사/앱카드 -->
+        <package android:name="kvp.jjy.MispAndroid320" />          <!-- ISP -->
+        <package android:name="com.kbcard.cxh.appcard" />          <!-- KBPay -->
+        <package android:name="com.kbstar.liivbank" />             <!-- Liiv Bank -->
+        <package android:name="com.kbstar.reboo" />                <!-- new Liiv (리브 Next?) -->
+        <package android:name="com.kbstar.kbbank" />               <!-- KB 스타뱅킹 -->
+        <package android:name="com.hanaskcard.paycla" />           <!-- 하나 Pay -->
+        <package android:name="com.hanaskcard.rocomo.potal" />     <!-- 하나 공인인증 (표기 확인 필요) -->
+        <package android:name="com.lcacApp" />                     <!-- 롯데 (표기/패키지 확인 필요) -->
+        <package android:name="kr.co.samsungcard.mpocket" />       <!-- 삼성카드 -->
+        <package android:name="net.ib.android.smcard" />           <!-- 삼성 monimo -->
+        <package android:name="com.shcard.smartpay" />             <!-- 신한 스마트페이 -->
+        <package android:name="com.shinhan.smartcaremgr" />        <!-- 신한 슈퍼SOL -->
+        <package android:name="com.shinhan.sbanking" />            <!-- 신한 SOL뱅크 -->
+        <package android:name="com.shinhancard.smartshinhan" />    <!-- 신한 (ARS/일반) -->
+        <package android:name="com.hyundaicard.appcard" />         <!-- 현대카드 -->
+        <package android:name="com.lumensoft.touchenappfree" />    <!-- 현대 공인인증 (TouchEn) -->
+        <package android:name="nh.smart.nhallonepay" />            <!-- NH 올원페이 (확인 필요) -->
+        <package android:name="kr.co.citibank.citimobile" />       <!-- 씨티 -->
+        <package android:name="com.wooricard.smartapp" />          <!-- 우리 WON 카드 -->
+        <package android:name="com.wooribank.smart.npib" />        <!-- 우리 WON 뱅킹 -->
+
+        <!-- 지갑/메신저/검색 등 보조 -->
+        <package android:name="com.kakao.talk" />                  <!-- 카카오톡 (스킴 연동) -->
+        <package android:name="com.nhn.android.search" />          <!-- 네이버 -->
+
+        <!-- 기타 결제 -->
+        <package android:name="finance.chai.app" />                <!-- CHAI PAY -->
+        <package android:name="com.eg.android.AlipayGphone" />     <!-- 알리페이 -->
+        <package android:name="com.tencent.mm" />                  <!-- 위챗페이(WeChat) -->
+
+        <!-- 뱅크페이/은행 -->
+        <package android:name="com.kftc.bankpay.android" />        <!-- 뱅크페이 -->
+        <package android:name="com.kbankwith.smartbank" />         <!-- 케이뱅크 -->
+
+        <!-- 보안/백신 -->
+        <package android:name="com.TouchEn.mVaccine.web" />        <!-- TouchEn mVaccine -->
+        <package android:name="com.ahnlab.v3mobileplus" />         <!-- 안랩 V3 -->
+        <package android:name="kr.co.shiftworks.vguardweb" />      <!-- vguard web -->
+        <package android:name="kr.co.shiftworks.vguard" />         <!-- vguard (안드로이드용 추가) -->
+
+        <!-- 마켓 호출 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="market" />
+        </intent>
+
+        <!-- (Flutter 기본) Process Text -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
@@ -13,34 +81,18 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
-    </queries>
 </manifest>
