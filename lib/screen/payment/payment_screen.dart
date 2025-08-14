@@ -1,4 +1,5 @@
 import 'package:aetteullo_cust/function/format_utils.dart';
+import 'package:aetteullo_cust/observer/route_observer.dart';
 import 'package:aetteullo_cust/screen/payment/payment_dtl_screen.dart';
 import 'package:aetteullo_cust/screen/payment/submit_payment_screen.dart';
 import 'package:aetteullo_cust/service/payment_service.dart';
@@ -13,7 +14,7 @@ class PaymentScreen extends StatefulWidget {
   State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState extends State<PaymentScreen> {
+class _PaymentScreenState extends State<PaymentScreen> with RouteAware {
   final double _height = 90;
   late final PaymentService _paymentService;
   List<Map<String, dynamic>> _paymentList = [];
@@ -27,6 +28,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     _paymentService = PaymentService();
     _loadPaymentList();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    _loadPaymentList();
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
   }
 
   Future<void> _loadPaymentList() async {
@@ -174,14 +192,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const Spacer(),
           InkWell(
             onTap: () async {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SubmitPaymentScreen(payments: _paymentList),
-                  ),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SubmitPaymentScreen(payments: _paymentList),
+                ),
+              );
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

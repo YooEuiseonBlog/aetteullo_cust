@@ -2,7 +2,6 @@ import 'package:aetteullo_cust/constant/constants.dart';
 import 'package:aetteullo_cust/function/format_utils.dart';
 import 'package:aetteullo_cust/provider/user_provider.dart';
 import 'package:aetteullo_cust/screen/payment/payment_form_web_view.dart';
-import 'package:aetteullo_cust/screen/webview/naver_web_view_test_screen.dart';
 import 'package:aetteullo_cust/service/dio_service.dart';
 import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
 import 'package:aetteullo_cust/widget/navigationbar/mobile_bottom_navigation_bar.dart';

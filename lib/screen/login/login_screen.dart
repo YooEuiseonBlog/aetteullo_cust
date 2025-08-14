@@ -223,31 +223,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelText: '비밀번호',
                           labelStyle: const TextStyle(color: Colors.grey),
                           border: const UnderlineInputBorder(),
-                          suffixIcon: Row(
+                          suffix: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.grey,
-                                ),
-                                onPressed: () {
-                                  // 비밀번호 입력창 초기화
-                                  pwdController.clear();
-                                },
+                                icon: const Icon(Icons.close),
+                                onPressed: () => pwdController.clear(),
                               ),
                               IconButton(
                                 icon: Icon(
                                   isPasswordObscured
                                       ? Icons.visibility_off
                                       : Icons.visibility,
-                                  color: Colors.grey,
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    isPasswordObscured = !isPasswordObscured;
-                                  });
-                                },
+                                onPressed: () => setState(
+                                  () =>
+                                      isPasswordObscured = !isPasswordObscured,
+                                ),
                               ),
                             ],
                           ),

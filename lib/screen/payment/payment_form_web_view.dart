@@ -1,3 +1,5 @@
+import 'package:aetteullo_cust/screen/payment/payment_success_screen.dart';
+import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -16,6 +18,8 @@ class _PaymentFormWebViewState extends State<PaymentFormWebView> {
   InAppWebViewController? _controller;
   bool _loading = true;
   String? _finalUrl;
+
+  static const _bridgeName = 'onPaymentFinished';
 
   @override
   void initState() {
@@ -43,10 +47,34 @@ class _PaymentFormWebViewState extends State<PaymentFormWebView> {
     return WebUri('${u.scheme}://${u.host}${hasPort ? ':${u.port}' : ''}');
   }
 
+  void _handlePaymentFinished(Map<String, dynamic> payload) {
+    if (kDebugMode) debugPrint('📩 Payment Finished: $payload');
+
+    final success = payload['success'] == true;
+
+    if (success) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => PaymentSuccessScreen()),
+        ModalRoute.withName('/payment'),
+      );
+    } else {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('결제가 실패하였습니다.')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('결제')),
+      appBar: MobileAppBar(
+        title: '결제',
+        showBasket: false,
+        showSearch: false,
+        showNotification: false,
+      ),
       body: Stack(
         children: [
           InAppWebView(
@@ -72,6 +100,20 @@ class _PaymentFormWebViewState extends State<PaymentFormWebView> {
                   path: '/',
                 );
               }
+
+              // 브릿지 등록 (JS -> Flutter)
+              _controller?.addJavaScriptHandler(
+                handlerName: _bridgeName,
+                callback: (args) async {
+                  if (args.isNotEmpty && args.first is Map) {
+                    _handlePaymentFinished(
+                      Map<String, dynamic>.from(args.first),
+                    );
+                  }
+
+                  return {'ack': true};
+                },
+              );
 
               // 쿠키 세팅 후 최초 로드 (원하면 Authorization 헤더도 추가 가능)
               await _controller?.loadUrl(
