@@ -17,7 +17,7 @@ class _LimitScreenState extends State<LimitScreen> {
 
   double? _creditLimitApp;
   double? _creditLimitAmnt;
-  bool _isEditing = false;
+  final bool _isEditing = false;
 
   late TextEditingController _appController;
   late TextEditingController _amntController;
@@ -77,64 +77,6 @@ class _LimitScreenState extends State<LimitScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  void _enterEditMode() {
-    _appController.text = _creditLimitApp != null
-        ? _creditLimitApp!.toInt().toString()
-        : '';
-    _amntController.text = _creditLimitAmnt != null
-        ? _creditLimitAmnt!.toStringAsFixed(0)
-        : '';
-    setState(() {
-      _isEditing = true;
-    });
-  }
-
-  Future<void> _saveChanges() async {
-    final appValue = double.tryParse(_appController.text);
-    final amntValue = double.tryParse(_amntController.text);
-
-    if (appValue == null || amntValue == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('유효한 숫자를 입력해주세요.')));
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _userService.setIndustLimit(
-        creditLimitAmnt: amntValue.toString(),
-        creditLimitApp: appValue.toString(),
-      );
-      _creditLimitApp = appValue;
-      _creditLimitAmnt = amntValue;
-      setState(() {
-        _isEditing = false;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('신용 한도 저장 중 오류가 발생했습니다.')));
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _cancelEdit() {
-    _appController.clear();
-    _amntController.clear();
-    setState(() {
-      _isEditing = false;
-    });
   }
 
   @override
