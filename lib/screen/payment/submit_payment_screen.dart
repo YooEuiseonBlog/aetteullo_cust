@@ -185,7 +185,12 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
                   color: Colors.green,
                   selected: selected,
                   onTap: () {
-                    setState(() => _selectedMethod = method);
+                    setState(() {
+                      _selectedMethod = method;
+                      if (_selectedMethod == PaymentMethod.transfer) {
+                        _amntCtrl.text = formatCurrency(_totRmnAmnt);
+                      }
+                    });
                   },
                 );
               },
