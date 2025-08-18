@@ -4,9 +4,11 @@ import 'package:aetteullo_cust/observer/route_observer.dart';
 import 'package:aetteullo_cust/provider/app_state_provider.dart';
 import 'package:aetteullo_cust/provider/com_code_provider.dart';
 import 'package:aetteullo_cust/provider/user_provider.dart';
+import 'package:aetteullo_cust/screen/deli/deli_screen.dart';
 import 'package:aetteullo_cust/screen/home/home_screen.dart';
 import 'package:aetteullo_cust/screen/login/login_screen.dart';
 import 'package:aetteullo_cust/screen/mypage/my_page_screen.dart';
+import 'package:aetteullo_cust/screen/orderhist/order_hist_screen.dart';
 import 'package:aetteullo_cust/screen/payment/payment_screen.dart';
 import 'package:aetteullo_cust/service/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -154,6 +156,8 @@ class MainApp extends StatelessWidget {
           '/home': (_) => const HomeScreen(),
           '/mypage': (_) => MyPageScreen(),
           '/payment': (_) => PaymentScreen(),
+          '/orderhist': (_) => OrderHistScreen(),
+          '/deli': (_) => DeliScreen(),
         },
       ),
     );

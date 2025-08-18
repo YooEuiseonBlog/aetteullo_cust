@@ -32,7 +32,7 @@ class MobileBottomNavigationBar extends StatelessWidget {
             );
             break;
           case 1:
-            Navigator.pushNamed(context, "/orderHist");
+            Navigator.pushNamed(context, "/orderhist");
             break;
           case 2:
             Navigator.pushNamed(context, "/deli");
