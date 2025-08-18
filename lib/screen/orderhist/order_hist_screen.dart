@@ -46,7 +46,7 @@ class _OrderHistScreenState extends State<OrderHistScreen>
   final CommonService _commonService = CommonService();
 
   SSEService? _sseService;
-  late StreamSubscription<MessageEvent>? _sseSub;
+  StreamSubscription<MessageEvent>? _sseSub;
 
   String _errorMessage = '';
 
@@ -83,6 +83,7 @@ class _OrderHistScreenState extends State<OrderHistScreen>
 
   @override
   void dispose() {
+    _sseSub?.cancel();
     _sseService?.dispose();
     routeObserver.unsubscribe(this);
     _tabController.dispose();

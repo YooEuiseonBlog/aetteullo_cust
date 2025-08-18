@@ -168,6 +168,7 @@ class _DeliScreenState extends State<DeliScreen>
 
   @override
   void dispose() {
+    _sseSub?.cancel(); // 선택: 구독 참조 정리
     _sseService?.dispose();
     _tabController.dispose();
     super.dispose();
