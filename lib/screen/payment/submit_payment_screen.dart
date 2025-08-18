@@ -4,6 +4,7 @@ import 'package:aetteullo_cust/function/format_utils.dart';
 import 'package:aetteullo_cust/provider/user_provider.dart';
 import 'package:aetteullo_cust/screen/payment/payment_form_web_view.dart';
 import 'package:aetteullo_cust/service/dio_service.dart';
+import 'package:aetteullo_cust/service/payment_service.dart';
 import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
 import 'package:aetteullo_cust/widget/navigationbar/mobile_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
@@ -24,13 +25,20 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
   static const String _baseUrl = API_BASE_URL;
   bool _isLoading = false;
   late final List<Map<String, dynamic>> _payments;
-  final TextEditingController _amntCtrl = TextEditingController();
+  double _prePymAmnt = 0.0;
+  final PaymentService _paymentService = PaymentService();
+  final TextEditingController _limitAmntCtrl = TextEditingController();
+  final TextEditingController _transperAmntCtrl = TextEditingController();
+  final bool _usedPrePymAmt = false;
 
   String get _partnerCd => _payments.first['partnerCd'];
   double get _totRmnAmnt => _payments.fold<double>(
     0.0,
     (acc, p) => acc + ((p['rmnAmnt'] as num?)?.toDouble() ?? 0.0),
   );
+
+  double get _realRmnAmnt =>
+      _usedPrePymAmt ? (_totRmnAmnt - _prePymAmnt) : _totRmnAmnt;
 
   PaymentMethod? _selectedMethod;
 
@@ -49,16 +57,28 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
     },
   ];
 
+  Future<void> _loadPrePymAmt() async {
+    final rawMap = await _paymentService.selectPrePym();
+    final amt = (rawMap['amt'] as int? ?? 0).toDouble();
+    setState(() {
+      _prePymAmnt = amt;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _payments = [...widget.payments.cast<Map<String, dynamic>>()];
-    _amntCtrl.text = formatCurrency(_totRmnAmnt);
+    _loadPrePymAmt();
+    final rmnAmnt = _realRmnAmnt >= 0 ? _realRmnAmnt : 0;
+    _transperAmntCtrl.text = formatCurrency(rmnAmnt);
+    _limitAmntCtrl.text = formatCurrency(rmnAmnt);
   }
 
   @override
   void dispose() {
-    _amntCtrl.dispose();
+    _limitAmntCtrl.dispose();
+    _transperAmntCtrl.dispose();
     super.dispose();
   }
 
@@ -87,7 +107,7 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
       }
 
       final amt = (_selectedMethod == PaymentMethod.transfer)
-          ? int.tryParse(_amntCtrl.text.replaceAll(',', '').trim()) ?? 0
+          ? int.tryParse(_transperAmntCtrl.text.replaceAll(',', '').trim()) ?? 0
           : _totRmnAmnt.toInt();
 
       if (amt <= 0) {
@@ -188,7 +208,7 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
                     setState(() {
                       _selectedMethod = method;
                       if (_selectedMethod == PaymentMethod.transfer) {
-                        _amntCtrl.text = formatCurrency(_totRmnAmnt);
+                        _transperAmntCtrl.text = formatCurrency(_totRmnAmnt);
                       }
                     });
                   },
@@ -209,7 +229,7 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
                   border: Border.all(color: Colors.green, width: 2),
                 ),
                 child: TextFormField(
-                  controller: _amntCtrl,
+                  controller: _transperAmntCtrl,
                   decoration: InputDecoration(border: InputBorder.none),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
