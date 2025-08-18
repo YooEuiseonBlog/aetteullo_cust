@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:aetteullo_cust/constant/constants.dart';
 import 'package:aetteullo_cust/function/color_utils.dart';
@@ -13,6 +14,7 @@ import 'package:aetteullo_cust/widget/navigationbar/mobile_bottom_navigation_bar
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:launchdarkly_event_source_client/launchdarkly_event_source_client.dart';
 
 class DeliScreen extends StatefulWidget {
   const DeliScreen({super.key});
@@ -27,8 +29,8 @@ class _DeliScreenState extends State<DeliScreen>
   final DeliService _deliService = DeliService();
   final RtnService _rtnService = RtnService();
   final String _topic = CUST_DELI_STAT_TOPIC;
-  late SSEService _sseService;
-  late StreamSubscription<SseEvent> _sseSub;
+  SSEService? _sseService;
+  StreamSubscription<MessageEvent>? _sseSub;
 
   List<Map<String, dynamic>> _deliList = [];
   List<Map<String, dynamic>> _rtnList = [];
@@ -55,8 +57,10 @@ class _DeliScreenState extends State<DeliScreen>
     try {
       final token = await DioCookieClient().getJwtToken();
       if (token == null) return;
+      _sseService?.dispose();
       _sseService = SSEService(token: token);
-      final stream = await _sseService.subscribe(_topic);
+      final stream = await _sseService!.subscribe(_topic);
+      await _sseSub?.cancel();
       _sseSub = stream.listen(
         _handleEvent,
         onError: (err) {
@@ -75,31 +79,38 @@ class _DeliScreenState extends State<DeliScreen>
     }
   }
 
-  void _handleEvent(SseEvent evt) {
-    if (evt.event == 'trigger') {
-      debugPrint('sse 연결 수신 완료');
-      // evt.data가 Map<dynamic, dynamic>일 때
-      final raw = evt.data as Map<dynamic, dynamic>;
-      final Map<String, dynamic> dataMap = raw.cast<String, dynamic>();
-      final deliCd = dataMap['deliCd'] as String;
-      final stat = dataMap['stat'] as String;
-      final statNm = dataMap['statNm'] as String;
-
-      // 2) setState 내부에서 리스트를 검색·수정
-      setState(() {
-        // (a) 주문 탭(_orderList)에 있을 경우
-        final idx = _deliList.indexWhere((e) => e['deliCd'] == deliCd);
-        if (idx != -1) {
-          _deliList[idx]['stat'] = stat;
-          _deliList[idx]['statNm'] = statNm;
-        }
-      });
+  void _handleEvent(MessageEvent evt) {
+    if (evt.type != 'trigger') return;
+    Map<String, dynamic>? dataMap;
+    try {
+      final s = evt.data.trim();
+      if (s.isEmpty || !(s.startsWith('{') || s.startsWith('['))) return;
+      final decoded = jsonDecode(s);
+      if (decoded is! Map) return;
+      dataMap = (decoded).cast<String, dynamic>();
+    } catch (_) {
+      return;
     }
+    final deliCd = dataMap['deliCd'] as String? ?? '';
+    final stat = dataMap['stat'] as String? ?? '';
+    final statNm = dataMap['statNm'] as String? ?? '';
+    if (deliCd.isEmpty || !mounted) return;
+    setState(() {
+      final idx = _deliList.indexWhere((e) => e['deliCd'] == deliCd);
+      if (idx != -1) {
+        _deliList[idx]['stat'] = stat;
+        _deliList[idx]['statNm'] = statNm;
+      }
+    });
   }
 
   void _retryInit() {
-    _sseSub.cancel();
-    Future.delayed(const Duration(seconds: 5), _initSse);
+    _sseService?.dispose();
+    _sseSub?.cancel();
+    Future.delayed(const Duration(seconds: 5), () {
+      if (!mounted) return;
+      _initSse();
+    });
   }
 
   Future<void> _getDeliList() async {
@@ -157,7 +168,7 @@ class _DeliScreenState extends State<DeliScreen>
 
   @override
   void dispose() {
-    _sseSub.cancel();
+    _sseService?.dispose();
     _tabController.dispose();
     super.dispose();
   }

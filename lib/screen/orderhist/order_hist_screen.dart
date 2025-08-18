@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:aetteullo_cust/constant/constants.dart';
 import 'package:aetteullo_cust/function/color_utils.dart';
@@ -15,6 +16,7 @@ import 'package:aetteullo_cust/widget/card/order_card.dart';
 import 'package:aetteullo_cust/widget/navigationbar/mobile_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:launchdarkly_event_source_client/launchdarkly_event_source_client.dart';
 import 'package:provider/provider.dart';
 
 class OrderHistScreen extends StatefulWidget {
@@ -43,12 +45,10 @@ class _OrderHistScreenState extends State<OrderHistScreen>
   final OrderService _orderService = OrderService();
   final CommonService _commonService = CommonService();
 
-  late SSEService _sseService;
-  late StreamSubscription<SseEvent>? _sseSub;
+  SSEService? _sseService;
+  late StreamSubscription<MessageEvent>? _sseSub;
 
   String _errorMessage = '';
-
-  int _retryCount = 0;
 
   final String _topic = CUST_PO_STAT_TOPIC;
 
@@ -83,7 +83,7 @@ class _OrderHistScreenState extends State<OrderHistScreen>
 
   @override
   void dispose() {
-    _sseSub?.cancel();
+    _sseService?.dispose();
     routeObserver.unsubscribe(this);
     _tabController.dispose();
     super.dispose();
@@ -95,67 +95,68 @@ class _OrderHistScreenState extends State<OrderHistScreen>
     if (token == null) return;
 
     try {
+      _sseService?.dispose(); // 기존 연결 정리
       _sseService = SSEService(token: token);
-      final stream = await _sseService.subscribe(_topic);
+      final stream = await _sseService!.subscribe(_topic);
 
       // 기존 구독이 남아있다면 해제
       await _sseSub?.cancel();
-
       _sseSub = stream.listen(
         _handleEvent,
         onError: (err, [st]) {
           debugPrint('🔥 SSE error: $err');
-          _scheduleRetry();
+          _retryInit();
         },
         onDone: () {
           debugPrint('🏁 SSE connection closed by server');
-          _scheduleRetry();
+          _retryInit();
         },
         cancelOnError: false,
       );
-
-      _retryCount = 0; // 성공하면 카운터 리셋
     } catch (e, st) {
       debugPrint('❌ SSE subscribe failed: $e\n$st');
-      _scheduleRetry();
+      _retryInit();
     }
   }
 
-  void _handleEvent(SseEvent evt) {
-    if (evt.event == 'trigger' && _selectedTabIndex == 0) {
-      debugPrint('sse 연결 수신 완료');
+  void _handleEvent(MessageEvent evt) {
+    // evt.type: "init" | "trigger" | "message"
+    // evt.data: 항상 String
+    if (_selectedTabIndex != 0) return; // 주문 탭에서만 반영
+    if (evt.type != 'trigger') return; // topic에서 보내는 건 name("trigger")
 
-      if (evt.data is! Map) return; // 방어 코드
-      final raw = evt.data as Map<dynamic, dynamic>;
-      final dataMap = raw.cast<String, dynamic>();
-
-      final poNo = dataMap['poNo'] as String? ?? '';
-      final stat = dataMap['stat'] as String? ?? '';
-      final statNm = dataMap['statNm'] as String? ?? '';
-      final fixYn = dataMap['fixYn'] as String? ?? '';
-
-      if (!mounted) return;
-      setState(() {
-        final idx = _orderList.indexWhere((e) => e['poNo'] == poNo);
-        if (idx != -1) {
-          _orderList[idx]['stat'] = stat;
-          _orderList[idx]['statNm'] = statNm;
-          _orderList[idx]['fixYn'] = fixYn;
-        }
-      });
+    // JSON 디코드
+    Map<String, dynamic>? dataMap;
+    try {
+      final s = evt.data.trim();
+      if (s.isEmpty || !(s.startsWith('{') || s.startsWith('['))) return;
+      final decoded = jsonDecode(s);
+      if (decoded is! Map) return; // 방어
+      dataMap = (decoded).cast<String, dynamic>();
+    } catch (_) {
+      return;
     }
+
+    final poNo = dataMap['poNo'] as String? ?? '';
+    final stat = dataMap['stat'] as String? ?? '';
+    final statNm = dataMap['statNm'] as String? ?? '';
+    final fixYn = dataMap['fixYn'] as String? ?? '';
+
+    if (!mounted || poNo.isEmpty) return;
+    setState(() {
+      final idx = _orderList.indexWhere((e) => e['poNo'] == poNo);
+      if (idx != -1) {
+        _orderList[idx]['stat'] = stat;
+        _orderList[idx]['statNm'] = statNm;
+        _orderList[idx]['fixYn'] = fixYn;
+      }
+    });
   }
 
-  void _scheduleRetry() {
+  void _retryInit() {
+    _sseService?.dispose();
     _sseSub?.cancel();
-    // 지수 백오프: 2s, 4s, 8s ... 최대 30s
-    final delay = Duration(
-      seconds: (_retryCount == 0)
-          ? 2
-          : (_retryCount >= 4 ? 30 : (2 << (_retryCount - 1))),
-    );
-    _retryCount++;
-    Future.delayed(delay, () {
+    Future.delayed(const Duration(seconds: 5), () {
       if (!mounted) return;
       _initSse();
     });
