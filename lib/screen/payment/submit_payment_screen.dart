@@ -1,4 +1,5 @@
 import 'package:aetteullo_cust/constant/constants.dart';
+import 'package:aetteullo_cust/formatter/formatter.dart';
 import 'package:aetteullo_cust/function/format_utils.dart';
 import 'package:aetteullo_cust/provider/user_provider.dart';
 import 'package:aetteullo_cust/screen/payment/payment_form_web_view.dart';
@@ -6,6 +7,7 @@ import 'package:aetteullo_cust/service/dio_service.dart';
 import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
 import 'package:aetteullo_cust/widget/navigationbar/mobile_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class SubmitPaymentScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
   static const String _baseUrl = API_BASE_URL;
   bool _isLoading = false;
   late final List<Map<String, dynamic>> _payments;
+  final TextEditingController _amntCtrl = TextEditingController();
 
   String get _partnerCd => _payments.first['partnerCd'];
   double get _totRmnAmnt => _payments.fold<double>(
@@ -49,9 +52,14 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
   @override
   void initState() {
     super.initState();
-    _payments = widget.payments
-        .map((m) => Map<String, dynamic>.from(m))
-        .toList();
+    _payments = [...widget.payments.cast<Map<String, dynamic>>()];
+    _amntCtrl.text = formatCurrency(_totRmnAmnt);
+  }
+
+  @override
+  void dispose() {
+    _amntCtrl.dispose();
+    super.dispose();
   }
 
   String _pathOf(PaymentMethod m) {
@@ -78,7 +86,10 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
         return;
       }
 
-      final amt = _totRmnAmnt.toInt();
+      final amt = (_selectedMethod == PaymentMethod.transfer)
+          ? int.tryParse(_amntCtrl.text.replaceAll(',', '').trim()) ?? 0
+          : _totRmnAmnt.toInt();
+
       if (amt <= 0) {
         ScaffoldMessenger.of(
           context,
@@ -114,11 +125,6 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
           ),
         ),
       );
-
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(builder: (_) => NaverWebViewTestScreen()),
-      // );
     } finally {
       setState(() {
         _isLoading = false;
@@ -185,6 +191,30 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
               },
             ),
             const SizedBox(height: 30),
+            if (_selectedMethod == PaymentMethod.transfer) ...[
+              Text(
+                '이체 금액',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 15),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green, width: 2),
+                ),
+                child: TextFormField(
+                  controller: _amntCtrl,
+                  decoration: InputDecoration(border: InputBorder.none),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    ThousandsFormatter(),
+                  ],
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              SizedBox(height: 20),
+            ],
             SizedBox(
               height: 48,
               width: double.infinity,
