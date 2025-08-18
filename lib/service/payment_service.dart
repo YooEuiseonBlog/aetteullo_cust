@@ -14,4 +14,18 @@ class PaymentService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> selectPrePym() async {
+    try {
+      final response = await DioCookieClient.http.get<Map<String, dynamic>>(
+        '/mobile/payment/prepym',
+      );
+
+      // 응답이 Map인지 안전하게 캐스팅
+      return response.data ?? {};
+    } on DioException catch (e) {
+      debugPrint('error: $e');
+      rethrow;
+    }
+  }
 }
