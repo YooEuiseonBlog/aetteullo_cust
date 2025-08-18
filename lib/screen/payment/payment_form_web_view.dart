@@ -1,4 +1,5 @@
 import 'package:aetteullo_cust/screen/payment/payment_success_screen.dart';
+import 'package:aetteullo_cust/screen/payment/payment_vbank_success_screen.dart';
 import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -52,13 +53,36 @@ class _PaymentFormWebViewState extends State<PaymentFormWebView> {
     if (kDebugMode) debugPrint('📩 Payment Finished: $payload');
 
     final success = payload['success'] == true;
+    final paySe = payload['paySe'];
 
     if (success) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => PaymentSuccessScreen()),
-        ModalRoute.withName('/payment'),
-      );
+      if (paySe == 'vbank') {
+        final bankNm = payload['bankNm'] as String? ?? '';
+        final vactNo = payload['vactNo'] as String? ?? '';
+        final holder = payload['holder'] as String? ?? '';
+        final exprDt = payload['exprDt'] as String? ?? '';
+        final amount = payload['amount'] as int? ?? 0;
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentVBankSuccessScreen(
+              bankNm: bankNm,
+              vactNo: vactNo,
+              holder: holder,
+              amount: amount,
+              exprDt: exprDt,
+            ),
+          ),
+          ModalRoute.withName('/payment'),
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => PaymentSuccessScreen()),
+          ModalRoute.withName('/payment'),
+        );
+      }
     } else {
       Navigator.pop(context);
       ScaffoldMessenger.of(
@@ -176,25 +200,36 @@ class _PaymentFormWebViewState extends State<PaymentFormWebView> {
   Future<void> _openExternal(Uri uri) async {
     final s = uri.toString();
 
-    // intent:// 처리
+    // ───────────────── intent:// 처리 ─────────────────
     if (s.startsWith('intent://')) {
-      final pkg = extractPackageName(s);
-      final fallback = extractFallbackUrl(s);
+      final pkg = extractPackageName(s); // package=...
+      final fallback = extractFallbackUrl(s); // S.browser_fallback_url=...
 
-      if (pkg != null) {
-        debugPrint('📦 intent package: $pkg');
-      } else {
-        debugPrint('⚠ intent에 package= 없음');
-      }
-
-      // 1) Android 인텐트 직접 실행 시도
+      // 1) Android 인텐트 직접 실행 시도 (intent:)
       final intentUri = Uri.parse(s.replaceFirst('intent://', 'intent:'));
       if (await canLaunchUrl(intentUri)) {
         await launchUrl(intentUri, mode: LaunchMode.externalApplication);
         return;
       }
 
-      // 2) fallback url 존재 시
+      // ✅ 2) 인텐트 실패 시: scheme + data 로 "실제 딥링크" 재시도
+      //    예: scheme=shinhan-sr-ansimclick, data=pay?srCode=...
+      final scheme = RegExp(r'scheme=([^;]+)').firstMatch(s)?.group(1);
+      final data = RegExp(
+        r'intent://([^#]+)#',
+      ).firstMatch(s)?.group(1); // pay?...
+
+      if (scheme != null && data != null) {
+        final deepLink = Uri.parse(
+          '$scheme://$data',
+        ); // shinhan-sr-ansimclick://pay?...
+        if (await canLaunchUrl(deepLink)) {
+          await launchUrl(deepLink, mode: LaunchMode.externalApplication);
+          return;
+        }
+      }
+
+      // 3) fallback url 존재 시
       if (fallback != null) {
         final fb = Uri.parse(Uri.decodeFull(fallback));
         if (await canLaunchUrl(fb)) {
@@ -203,25 +238,23 @@ class _PaymentFormWebViewState extends State<PaymentFormWebView> {
         }
       }
 
-      // 3) 마켓 이동
+      // 4) 마켓 이동
       if (pkg != null) {
         await _openPlayStore(package: pkg);
       } else {
-        // 패키지가 없으면 스킴으로 검색
-        await _openPlayStore(
-          keyword: uri.scheme.isNotEmpty ? uri.scheme : 'pay',
-        );
+        await _openPlayStore(keyword: scheme ?? uri.scheme);
       }
       return;
     }
+    // ───────────────── intent:// 처리 끝 ─────────────────
 
-    // 커스텀 스킴(ex. mvaccine://, shinhan-sr-ansimclick:// ...)
+    // 커스텀 스킴(ex. mvaccine:// 등)
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       return;
     }
 
-    // 실행 불가 → 패키지 추정 후 마켓 검색/이동
+    // 실행 불가 → 스킴으로 패키지 추정 후 마켓 이동
     final guess = _guessPackageFromScheme(uri.scheme);
     if (guess != null) {
       await _openPlayStore(package: guess);
@@ -254,12 +287,32 @@ class _PaymentFormWebViewState extends State<PaymentFormWebView> {
               final uri = action.request.url;
               if (uri == null) return NavigationActionPolicy.CANCEL;
 
-              // intent:// 들어오면 package= 로깅
-              final urlStr = uri.toString();
-              if (urlStr.startsWith('intent://')) {
-                final pkg = extractPackageName(urlStr);
-                debugPrint('🧩 intent 패키지 추출: ${pkg ?? "(없음)"}');
-              }
+              // intent: // 들어오면 package= 로깅
+              // final urlStr = uri.toString();
+              // if (urlStr.startsWith('intent://')) {
+              //   final pkg = extractPackageName(urlStr);
+              //   final msg = 'URL: $urlStr\n패키지: ${pkg ?? "(없음)"}';
+
+              //   // 1) 콘솔에도 찍기
+              //   debugPrint('🧩 $msg');
+
+              //   // 2) 화면에 Alert로 띄우기
+              //   WidgetsBinding.instance.addPostFrameCallback((_) {
+              //     showDialog(
+              //       context: context,
+              //       builder: (_) => AlertDialog(
+              //         title: const Text('Intent URL Detected'),
+              //         content: SingleChildScrollView(child: Text(msg)),
+              //         actions: [
+              //           TextButton(
+              //             onPressed: () => Navigator.pop(context),
+              //             child: const Text('OK'),
+              //           ),
+              //         ],
+              //       ),
+              //     );
+              //   });
+              // }
 
               const inApp = {
                 'http',
