@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:aetteullo_cust/constant/constants.dart';
 import 'package:aetteullo_cust/formatter/formatter.dart';
 import 'package:aetteullo_cust/function/format_utils.dart';
@@ -28,8 +30,8 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
   double _prePymAmnt = 0.0;
   final PaymentService _paymentService = PaymentService();
   final TextEditingController _limitAmntCtrl = TextEditingController();
-  final TextEditingController _transperAmntCtrl = TextEditingController();
-  final bool _usedPrePymAmt = false;
+  final TextEditingController _unLimitAmntCtrl = TextEditingController();
+  bool _isUsedPrePymAmt = false;
 
   String get _partnerCd => _payments.first['partnerCd'];
   double get _totRmnAmnt => _payments.fold<double>(
@@ -37,8 +39,13 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
     (acc, p) => acc + ((p['rmnAmnt'] as num?)?.toDouble() ?? 0.0),
   );
 
-  double get _realRmnAmnt =>
-      _usedPrePymAmt ? (_totRmnAmnt - _prePymAmnt) : _totRmnAmnt;
+  double get _realRmnAmnt => _isUsedPrePymAmt
+      ? (_totRmnAmnt - _prePymAmnt) >= 0
+            ? (_totRmnAmnt - _prePymAmnt)
+            : 0.0
+      : _totRmnAmnt;
+
+  double get _usePrePymAmt => min(_prePymAmnt, _totRmnAmnt);
 
   PaymentMethod? _selectedMethod;
 
@@ -70,15 +77,14 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
     super.initState();
     _payments = [...widget.payments.cast<Map<String, dynamic>>()];
     _loadPrePymAmt();
-    final rmnAmnt = _realRmnAmnt >= 0 ? _realRmnAmnt : 0;
-    _transperAmntCtrl.text = formatCurrency(rmnAmnt);
-    _limitAmntCtrl.text = formatCurrency(rmnAmnt);
+    _unLimitAmntCtrl.text = formatCurrency(_realRmnAmnt);
+    _limitAmntCtrl.text = formatCurrency(_realRmnAmnt);
   }
 
   @override
   void dispose() {
     _limitAmntCtrl.dispose();
-    _transperAmntCtrl.dispose();
+    _unLimitAmntCtrl.dispose();
     super.dispose();
   }
 
@@ -90,6 +96,27 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
         return '/v1/inicis/n/bank/form';
       case PaymentMethod.vAccount:
         return '/v1/inicis/n/vbank/form';
+    }
+  }
+
+  double _parseAmount(String s) {
+    if (s.isEmpty) return 0;
+    return double.tryParse(s.replaceAll(',', '').trim()) ?? 0.0;
+  }
+
+  void _clampLimitAmount() {
+    final curr = _parseAmount(_limitAmntCtrl.text);
+    final clamped = curr > _realRmnAmnt ? _realRmnAmnt : curr;
+
+    final formatted = formatCurrency(clamped);
+    if (_limitAmntCtrl.text != formatted) {
+      setState(() {
+        _limitAmntCtrl.text = formatted;
+      });
+      // // 커서를 맨 뒤로 이동
+      // _limitAmntCtrl.selection = TextSelection.fromPosition(
+      //   TextPosition(offset: _limitAmntCtrl.text.length),
+      // );
     }
   }
 
@@ -106,9 +133,13 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
         return;
       }
 
-      final amt = (_selectedMethod == PaymentMethod.transfer)
-          ? int.tryParse(_transperAmntCtrl.text.replaceAll(',', '').trim()) ?? 0
-          : _totRmnAmnt.toInt();
+      var amt = (_selectedMethod == PaymentMethod.transfer)
+          ? _parseAmount(_unLimitAmntCtrl.text).toInt()
+          : _parseAmount(_limitAmntCtrl.text).toInt();
+
+      if (_selectedMethod != PaymentMethod.transfer) {
+        amt = min(amt.toDouble(), _realRmnAmnt).toInt();
+      }
 
       if (amt <= 0) {
         ScaffoldMessenger.of(
@@ -156,104 +187,222 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const MobileAppBar(title: '결제하기'),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('총 결제금액', style: TextStyle(fontSize: 16)),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('결제금액', style: TextStyle(fontSize: 16)),
+                  Text(
+                    '${formatCurrency(_totRmnAmnt)}원',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        value: _isUsedPrePymAmt,
+                        onChanged: _prePymAmnt > 0
+                            ? (val) {
+                                setState(() {
+                                  debugPrint('$val');
+                                  _isUsedPrePymAmt = val!;
+                                });
+                                _clampLimitAmount();
+                              }
+                            : null,
+                      ),
+                      Text(
+                        '선수금',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: _isUsedPrePymAmt
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${formatCurrency(_prePymAmnt)}원',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: _isUsedPrePymAmt ? Colors.green : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 48),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '- 사용 선수금',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: _isUsedPrePymAmt
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      '${formatCurrency(_isUsedPrePymAmt ? _usePrePymAmt : 0.0)}원',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: _isUsedPrePymAmt ? Colors.green : Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '최종 결제금액',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${formatCurrency(_realRmnAmnt)}원',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              const Divider(height: 20, thickness: 3),
+              SizedBox(height: 10),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '결제수단 선택',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              GridView.builder(
+                shrinkWrap: true, // 자식 크기만큼
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _options.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 0.95,
+                ),
+                itemBuilder: (context, index) {
+                  final method = _options[index]['method'] as PaymentMethod;
+                  final label = _options[index]['label'] as String;
+                  final icon = _options[index]['icon'] as IconData;
+                  final selected = _selectedMethod == method;
+
+                  return _buildPaymentMethodTile(
+                    label: label,
+                    icon: icon,
+                    color: Colors.green,
+                    selected: selected,
+                    onTap: () {
+                      setState(() {
+                        if (_selectedMethod != method) {
+                          _selectedMethod = method;
+                          _limitAmntCtrl.text = formatCurrency(_realRmnAmnt);
+                          _unLimitAmntCtrl.text = formatCurrency(_realRmnAmnt);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 30),
+              if (_selectedMethod == PaymentMethod.transfer) ...[
                 Text(
-                  '${formatCurrency(_totRmnAmnt)}원',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.blue,
+                  '이체 금액',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 15),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green, width: 2),
+                  ),
+                  child: TextFormField(
+                    controller: _unLimitAmntCtrl,
+                    decoration: InputDecoration(border: InputBorder.none),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      ThousandsFormatter(),
+                    ],
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ] else if (_selectedMethod == PaymentMethod.card ||
+                  _selectedMethod == PaymentMethod.vAccount) ...[
+                Text(
+                  '이체 금액',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 15),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green, width: 2),
+                  ),
+                  child: TextFormField(
+                    controller: _limitAmntCtrl,
+                    decoration: InputDecoration(border: InputBorder.none),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      ThousandsFormatter(),
+                    ],
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _clampLimitAmount(),
+                    onEditingComplete: () {
+                      _clampLimitAmount();
+                      FocusScope.of(context).unfocus();
+                    },
                   ),
                 ),
               ],
-            ),
-            const Divider(height: 20),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                '결제수단 선택',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-            GridView.builder(
-              shrinkWrap: true, // 자식 크기만큼
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _options.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 0.95,
-              ),
-              itemBuilder: (context, index) {
-                final method = _options[index]['method'] as PaymentMethod;
-                final label = _options[index]['label'] as String;
-                final icon = _options[index]['icon'] as IconData;
-                final selected = _selectedMethod == method;
-
-                return _buildPaymentMethodTile(
-                  label: label,
-                  icon: icon,
-                  color: Colors.green,
-                  selected: selected,
-                  onTap: () {
-                    setState(() {
-                      _selectedMethod = method;
-                      if (_selectedMethod == PaymentMethod.transfer) {
-                        _transperAmntCtrl.text = formatCurrency(_totRmnAmnt);
-                      }
-                    });
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 30),
-            if (_selectedMethod == PaymentMethod.transfer) ...[
-              Text(
-                '이체 금액',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 10),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 15),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green, width: 2),
-                ),
-                child: TextFormField(
-                  controller: _transperAmntCtrl,
-                  decoration: InputDecoration(border: InputBorder.none),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    ThousandsFormatter(),
-                  ],
-                  keyboardType: TextInputType.number,
-                ),
-              ),
               SizedBox(height: 20),
-            ],
-            SizedBox(
-              height: 48,
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.green,
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              SizedBox(
+                height: 48,
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.green,
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: _onPay,
+                  child: const Text('결제하기'),
                 ),
-                onPressed: _onPay,
-                child: const Text('결제하기'),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: const MobileBottomNavigationBar(),
@@ -300,7 +449,7 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontWeight: FontWeight.w600,
+                fontWeight: selected ? FontWeight.bold : FontWeight.w600,
                 color: selected ? primary : Colors.black87,
                 fontSize: 13,
               ),
