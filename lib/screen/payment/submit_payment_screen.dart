@@ -178,14 +178,14 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
           ),
         );
       } else {
-        // await _paymentService.payPrePymAmt(
-        //   ptnrCd: _partnerCd,
-        //   amt: _totRmnAmnt.toInt(),
-        //   prdNm: '${user.industNm}_대금',
-        //   byrNm: user.userNm,
-        //   byrMblNo: user.phone,
-        //   byrEmail: user.email,
-        // );
+        await _paymentService.payPrePymAmt(
+          ptnrCd: _partnerCd,
+          amt: _totRmnAmnt.toInt(),
+          prdNm: '${user.industNm}_대금',
+          byrNm: user.userNm,
+          byrMblNo: user.phone,
+          byrEmail: user.email,
+        );
 
         if (!mounted) return;
         Navigator.pushReplacement(
