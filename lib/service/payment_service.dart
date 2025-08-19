@@ -28,4 +28,34 @@ class PaymentService {
       rethrow;
     }
   }
+
+  Future<void> payPrePymAmt({
+    required String ptnrCd,
+    required int amt,
+    required String prdNm,
+    required String byrNm,
+    required String byrMblNo,
+    required String byrEmail,
+  }) async {
+    try {
+      final resp = await DioCookieClient.http.post<Map<String, dynamic>>(
+        '/v1/pymnt/prepym/auth',
+        data: <String, dynamic>{
+          'ptnrCd': ptnrCd,
+          'amt': amt,
+          'prdNm': prdNm,
+          'byrNm': byrNm,
+          'byrMblNo': byrMblNo,
+          'byrEmail': byrEmail,
+        },
+      );
+
+      if (resp.data == null || resp.data?['status'] == 'error') {
+        throw DioException(requestOptions: RequestOptions());
+      }
+    } on DioException catch (e) {
+      debugPrint('$e');
+      rethrow;
+    }
+  }
 }

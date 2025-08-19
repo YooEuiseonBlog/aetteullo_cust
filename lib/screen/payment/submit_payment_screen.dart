@@ -5,6 +5,7 @@ import 'package:aetteullo_cust/formatter/formatter.dart';
 import 'package:aetteullo_cust/function/format_utils.dart';
 import 'package:aetteullo_cust/provider/user_provider.dart';
 import 'package:aetteullo_cust/screen/payment/payment_form_web_view.dart';
+import 'package:aetteullo_cust/screen/payment/payment_success_screen.dart';
 import 'package:aetteullo_cust/service/dio_service.dart';
 import 'package:aetteullo_cust/service/payment_service.dart';
 import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
@@ -141,41 +142,57 @@ class _SubmitPaymentScreenState extends State<SubmitPaymentScreen> {
         amt = min(amt.toDouble(), _realRmnAmnt).toInt();
       }
 
-      if (amt <= 0) {
+      if (_prePymAmnt <= 0 && amt <= 0) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('결제 금액이 없습니다.')));
         return;
       }
 
-      final path = _pathOf(_selectedMethod!);
       final user = context.read<UserProvider>().user;
+      if (amt > 0) {
+        final path = _pathOf(_selectedMethod!);
+        final uri = Uri.parse('$_baseUrl$path').replace(
+          queryParameters: {
+            'amt': amt.toString(),
+            'prdNm': '${user.industNm}_대금',
+            'byrNm': user.userNm,
+            'byrMblNo': user.phone,
+            'byrEmail': user.email,
+            'industCd': user.industCd,
+            'ptnrCd': _partnerCd,
+          },
+        );
 
-      final uri = Uri.parse('$_baseUrl$path').replace(
-        queryParameters: {
-          'amt': amt.toString(),
-          'prdNm': '${user.industNm}_대금',
-          'byrNm': user.userNm,
-          'byrMblNo': user.phone,
-          'byrEmail': user.email,
-          'industCd': user.industCd,
-          'ptnrCd': _partnerCd,
-        },
-      );
+        // 쿠키 Jar 에서 JWT_TOKEN 꺼냄 (DioCookieClient 싱글톤)
+        final jwt = await DioCookieClient().getJwtToken();
 
-      // 쿠키 Jar 에서 JWT_TOKEN 꺼냄 (DioCookieClient 싱글톤)
-      final jwt = await DioCookieClient().getJwtToken();
-
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PaymentFormWebView(
-            url: uri.toString(),
-            bearerToken: jwt, // ← WebView로 넘김 (첫 요청 헤더에 붙음)
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentFormWebView(
+              url: uri.toString(),
+              bearerToken: jwt, // ← WebView로 넘김 (첫 요청 헤더에 붙음)
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // await _paymentService.payPrePymAmt(
+        //   ptnrCd: _partnerCd,
+        //   amt: _totRmnAmnt.toInt(),
+        //   prdNm: '${user.industNm}_대금',
+        //   byrNm: user.userNm,
+        //   byrMblNo: user.phone,
+        //   byrEmail: user.email,
+        // );
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => PaymentSuccessScreen()),
+        );
+      }
     } finally {
       setState(() {
         _isLoading = false;
