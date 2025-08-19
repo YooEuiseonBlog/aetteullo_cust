@@ -7,14 +7,14 @@ class ExpandableSection extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final Alignment? mainAxisAlignment;
   final CrossAxisAlignment? crossAxisAlignment;
-  final ValueChanged<bool> onExpansionChanged;
+  final ValueChanged<bool>? onExpansionChanged;
   final List<Widget> children;
 
   const ExpandableSection({
     super.key,
     required this.title,
     required this.isExpanded,
-    required this.onExpansionChanged,
+    this.onExpansionChanged,
     required this.children,
     this.mainAxisAlignment,
     this.crossAxisAlignment,
@@ -25,7 +25,7 @@ class ExpandableSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.withOpacity(0.5), width: 2),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.5), width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias, // 내부 자식이 borderRadius 범위를 넘지 않도록 클립
@@ -47,8 +47,8 @@ class ExpandableSection extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           backgroundColor: Colors.white,
           collapsedBackgroundColor: Colors.white,
-          iconColor: Colors.grey.withOpacity(0.7),
-          collapsedIconColor: Colors.grey.withOpacity(0.7),
+          iconColor: Colors.grey.withValues(alpha: 0.7),
+          collapsedIconColor: Colors.grey.withValues(alpha: 0.7),
           title: Text(
             title,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
