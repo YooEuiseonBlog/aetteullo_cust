@@ -3,17 +3,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 class FcmService {
-  final DioCookieClient _client;
-
-  FcmService({DioCookieClient? dioClient})
-    : _client = dioClient ?? DioCookieClient();
-
   void upsertFcmToken({
     required String deviceId,
     required String fcmToken,
   }) async {
     try {
-      await _client.dio.post(
+      await DioCookieClient.http.post(
         '/fcm',
         data: <String, dynamic>{
           'deviceId': deviceId,
@@ -29,7 +24,7 @@ class FcmService {
 
   void deleteFcmToken({required String deviceId}) async {
     try {
-      await _client.dio.delete(
+      await DioCookieClient.http.delete(
         '/fcm',
         data: <String, dynamic>{'deviceId': deviceId, 'appType': 'CLIENT'},
       );
