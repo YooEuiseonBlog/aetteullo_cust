@@ -1,3 +1,4 @@
+import 'package:aetteullo_cust/screen/orderhist/order_hist_screen.dart';
 import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
 import 'package:aetteullo_cust/widget/navigationbar/mobile_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
@@ -52,13 +53,13 @@ class OrderSuccessScreen extends StatelessWidget {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () {
-                    // // OrderListScreen으로 교체하고 스택 정리
-                    // Navigator.of(context).pushAndRemoveUntil(
-                    //   MaterialPageRoute(
-                    //     builder: (_) => const OrderHistScreen(),
-                    //   ),
-                    //   (route) => route.isFirst, // home만 남김
-                    // );
+                    // OrderListScreen으로 교체하고 스택 정리
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) => const OrderHistScreen(),
+                      ),
+                      (route) => route.isFirst, // home만 남김
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,

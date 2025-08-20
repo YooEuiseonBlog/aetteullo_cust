@@ -101,6 +101,7 @@ class _OrderHistDtlCnclScreenState extends State<OrderHistDtlCnclScreen> {
         'statNm': '발주 취소',
         'clMemo': memo,
         'clDate': toYyyyMMdd(DateTime.now()),
+        'fixYn': 'Y',
       };
 
       if (mounted) {
