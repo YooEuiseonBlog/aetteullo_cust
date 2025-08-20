@@ -35,6 +35,8 @@ class _OrderHistScreenState extends State<OrderHistScreen>
 
   bool _isLoading = false;
 
+  bool _isFirst = true;
+
   // 날짜 선택용
   final List<DateTime?> _filterDates = [null, null];
 
@@ -182,7 +184,10 @@ class _OrderHistScreenState extends State<OrderHistScreen>
       }
       _errorMessage = '데이터를 불러오는 데 실패했습니다.';
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        if (_isFirst) _isFirst = false;
+      });
     }
   }
 
@@ -238,9 +243,7 @@ class _OrderHistScreenState extends State<OrderHistScreen>
   Widget _buildTabContent() {
     final list = _currentList();
 
-    // 비어 있을 때: 필터 고정 + 중앙 메시지
-
-    if (_isLoading) {
+    if (_isFirst && _isLoading) {
       return Column(
         children: [
           _buildFilterBar(),
@@ -248,6 +251,8 @@ class _OrderHistScreenState extends State<OrderHistScreen>
         ],
       );
     }
+
+    // 비어 있을 때: 필터 고정 + 중앙 메시지
 
     if (list.isEmpty) {
       return Column(
