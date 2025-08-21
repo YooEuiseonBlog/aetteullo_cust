@@ -34,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // idController.text = 'yoo_eui_seon';
     _loadAutoLoginPref();
     // idController.text = 'error_open';
-    // idController.text = 'pm-dis1';
     idController.text = 'gr-cus1';
     pwdController.text = '7877';
   }
