@@ -56,7 +56,7 @@ class DioCookieClient {
       await cookieJar.deleteAll();
 
       await dio.post(
-        '/auth/login',
+        '/login/cust',
         data: {'username': username, 'password': password},
       );
 
