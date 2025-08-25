@@ -21,6 +21,8 @@ class OrderHistDtlCnclScreen extends StatefulWidget {
 class _OrderHistDtlCnclScreenState extends State<OrderHistDtlCnclScreen> {
   bool _isLoading = false;
 
+  final List<String> reasons = ['고객 변심', '상품 불량', '배송 지연', '기타', '직접 입력'];
+
   final _formatter = NumberFormat.currency(
     locale: 'ko_KR',
     symbol: '',
@@ -42,6 +44,7 @@ class _OrderHistDtlCnclScreenState extends State<OrderHistDtlCnclScreen> {
     // DateFormat을 이용해 'yyyy-MM-dd' 형태로 변환
     final formatter = DateFormat('yyyy-MM-dd');
     _cancelDateController.text = formatter.format(now);
+    _selectedCancelReason = reasons.first;
   }
 
   @override
@@ -419,19 +422,12 @@ class _OrderHistDtlCnclScreenState extends State<OrderHistDtlCnclScreen> {
                             ),
                             value: _selectedCancelReason,
                             hint: const Text('취소사유'),
-                            items:
-                                const [
-                                  '고객 변심',
-                                  '상품 불량',
-                                  '배송 지연',
-                                  '기타',
-                                  '직접 입력',
-                                ].map((reason) {
-                                  return DropdownMenuItem<String>(
-                                    value: reason,
-                                    child: Text(reason),
-                                  );
-                                }).toList(),
+                            items: reasons.map((reason) {
+                              return DropdownMenuItem<String>(
+                                value: reason,
+                                child: Text(reason),
+                              );
+                            }).toList(),
                             onChanged: (value) {
                               setState(() {
                                 _selectedCancelReason = value;

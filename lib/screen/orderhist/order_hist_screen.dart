@@ -30,12 +30,7 @@ class OrderHistScreen extends StatefulWidget {
 class _OrderHistScreenState extends State<OrderHistScreen>
     with SingleTickerProviderStateMixin, RouteAware {
   late final TabController _tabController;
-
-  int _selectedTabIndex = 0;
-
   bool _isLoading = false;
-
-  bool _isFirst = true;
 
   // 날짜 선택용
   final List<DateTime?> _filterDates = [null, null];
@@ -51,23 +46,20 @@ class _OrderHistScreenState extends State<OrderHistScreen>
   StreamSubscription<MessageEvent>? _sseSub;
 
   String _errorMessage = '';
-
   final String _topic = CUST_PO_STAT_TOPIC;
 
   @override
   void initState() {
     super.initState();
-    _selectedTabIndex = widget.tabIdx ?? 0;
-    _tabController =
-        TabController(length: 2, vsync: this, initialIndex: _selectedTabIndex)
-          ..addListener(() {
-            if (!_tabController.indexIsChanging) {
-              _selectedTabIndex = _tabController.index;
-              _loadForTab(_selectedTabIndex);
-            }
-          });
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.tabIdx ?? 0,
+    );
     _initSse();
-    _loadForTab(_selectedTabIndex);
+
+    // 📌 초기화 시 둘 다 로딩
+    _loadBothTabs();
   }
 
   @override
@@ -79,7 +71,7 @@ class _OrderHistScreenState extends State<OrderHistScreen>
 
   @override
   void didPopNext() {
-    _loadForTab(_selectedTabIndex);
+    // 아무것도 하지 않음 - 개별 onClickDtlBtn에서 처리
     _commonService.setNavIndex(context, 1);
   }
 
@@ -93,16 +85,14 @@ class _OrderHistScreenState extends State<OrderHistScreen>
   }
 
   Future<void> _initSse() async {
-    // 1) JWT Token 읽기
     final token = await DioCookieClient().getJwtToken();
     if (token == null) return;
 
     try {
-      _sseService?.dispose(); // 기존 연결 정리
+      _sseService?.dispose();
       _sseService = SSEService(token: token);
       final stream = await _sseService!.subscribe(_topic);
 
-      // 기존 구독이 남아있다면 해제
       await _sseSub?.cancel();
       _sseSub = stream.listen(
         _handleEvent,
@@ -123,18 +113,15 @@ class _OrderHistScreenState extends State<OrderHistScreen>
   }
 
   void _handleEvent(MessageEvent evt) {
-    // evt.type: "init" | "trigger" | "message"
-    // evt.data: 항상 String
-    if (_selectedTabIndex != 0) return; // 주문 탭에서만 반영
-    if (evt.type != 'trigger') return; // topic에서 보내는 건 name("trigger")
+    if (_tabController.index != 0) return; // 📌 주문 탭에서만 반영
+    if (evt.type != 'trigger') return;
 
-    // JSON 디코드
     Map<String, dynamic>? dataMap;
     try {
       final s = evt.data.trim();
       if (s.isEmpty || !(s.startsWith('{') || s.startsWith('['))) return;
       final decoded = jsonDecode(s);
-      if (decoded is! Map) return; // 방어
+      if (decoded is! Map) return;
       dataMap = (decoded).cast<String, dynamic>();
     } catch (_) {
       return;
@@ -165,34 +152,78 @@ class _OrderHistScreenState extends State<OrderHistScreen>
     });
   }
 
+  /// 📌 초기 로딩: 둘 다 동시에 로드 (mounted 체크 추가)
+  Future<void> _loadBothTabs() async {
+    if (_isLoading || !mounted) return;
+    setState(() => _isLoading = true);
+
+    try {
+      // 📌 병렬로 둘 다 로드
+      final results = await Future.wait([
+        _orderService.selectPoList(poDate: _filterDates[0]),
+        _orderService.getCancelPoList(clDate: _filterDates[1]),
+      ]);
+
+      // ⚠️ await 후 반드시 mounted 체크
+      if (!mounted) return;
+
+      setState(() {
+        _orderList = results[0];
+        _cancelList = results[1];
+        _errorMessage = '';
+      });
+
+      debugPrint(
+        '📊 로딩 완료: 주문 ${_orderList.length}건, 취소 ${_cancelList.length}건',
+      );
+    } catch (e) {
+      debugPrint('❌ 로딩 실패: $e');
+
+      // ⚠️ catch에서도 mounted 체크
+      if (!mounted) return;
+
+      setState(() {
+        _orderList = [];
+        _cancelList = [];
+        _errorMessage = '데이터를 불러오는 데 실패했습니다.';
+      });
+    } finally {
+      // ⚠️ finally에서도 mounted 체크
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// 📌 개별 탭 로딩 (필터 변경 시)
   Future<void> _loadForTab(int idx) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
+
     final selected = _filterDates[idx];
     try {
       if (idx == 0) {
         _orderList = await _orderService.selectPoList(poDate: selected);
+        debugPrint('📊 주문 데이터 로드 완료: ${_orderList.length}건');
       } else {
         _cancelList = await _orderService.getCancelPoList(clDate: selected);
+        debugPrint('📊 취소 데이터 로드 완료: ${_cancelList.length}건');
       }
+      setState(() => _errorMessage = '');
     } catch (e) {
-      debugPrint('탭 $idx 로드 오류: $e');
-      if (idx == 0) {
-        _orderList = [];
-      } else {
-        _cancelList = [];
-      }
-      _errorMessage = '데이터를 불러오는 데 실패했습니다.';
-    } finally {
+      debugPrint('❌ 탭 $idx 로드 오류: $e');
       setState(() {
-        _isLoading = false;
-        if (_isFirst) _isFirst = false;
+        if (idx == 0) {
+          _orderList = [];
+        } else {
+          _cancelList = [];
+        }
+        _errorMessage = '데이터를 불러오는 데 실패했습니다.';
       });
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
-
-  List<Map<String, dynamic>> _currentList() =>
-      _selectedTabIndex == 0 ? _orderList : _cancelList;
 
   String _formattedChip(int idx) {
     final d = _filterDates[idx];
@@ -219,31 +250,31 @@ class _OrderHistScreenState extends State<OrderHistScreen>
   }
 
   Widget _buildFilterBar() {
+    final currentTabIndex = _tabController.index;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          if (_filterDates[_selectedTabIndex] != null) ...[
+          if (_filterDates[currentTabIndex] != null) ...[
             Chip(
               backgroundColor: Colors.white,
-              label: Text(_formattedChip(_selectedTabIndex)),
-              onDeleted: () => _clearDate(_selectedTabIndex),
+              label: Text(_formattedChip(currentTabIndex)),
+              onDeleted: () => _clearDate(currentTabIndex),
             ),
           ],
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.calendar_today, size: 20),
-            onPressed: () => _pickDate(_selectedTabIndex),
+            onPressed: () => _pickDate(currentTabIndex),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTabContent() {
-    final list = _currentList();
-
-    if (_isFirst && _isLoading) {
+  Widget _buildTabContent({required List<Map<String, dynamic>> list}) {
+    // 📌 로딩 중
+    if (_isLoading) {
       return Column(
         children: [
           _buildFilterBar(),
@@ -252,8 +283,7 @@ class _OrderHistScreenState extends State<OrderHistScreen>
       );
     }
 
-    // 비어 있을 때: 필터 고정 + 중앙 메시지
-
+    // 📌 데이터가 비어있을 때
     if (list.isEmpty) {
       return Column(
         children: [
@@ -270,7 +300,7 @@ class _OrderHistScreenState extends State<OrderHistScreen>
       );
     }
 
-    // 데이터 있을 때: 스크롤 포함된 필터 + 리스트
+    // 📌 데이터가 있을 때
     return Column(
       children: [
         _buildFilterBar(),
@@ -312,19 +342,26 @@ class _OrderHistScreenState extends State<OrderHistScreen>
                 cnt: items.length.toDouble(),
                 date: poDate,
                 onClickDtlBtn: () async {
+                  final currentTabIndex =
+                      _tabController.index; // 📌 현재 탭 인덱스 저장
+
                   final stat = await Navigator.push<String>(
                     context,
                     MaterialPageRoute(
                       builder: (_) => OrderHistDtlScreen(orderInfo: order),
                     ),
                   );
+
+                  // 📌 주문 탭(index 0)에서만 둘 다 로딩
+                  if (currentTabIndex == 0) {
+                    debugPrint('📊 주문 탭에서 상세 돌아옴 - 둘 다 다시 로드');
+                    _loadBothTabs();
+                  }
+
+                  // 📌 상태 변경이 있었다면 해당 탭으로 이동
                   if (stat != null) {
-                    final idx = stat == '1' ? 1 : 0;
-                    setState(() {
-                      _tabController.index = idx;
-                      _selectedTabIndex = idx;
-                    });
-                    _loadForTab(idx);
+                    final targetIdx = stat == '1' ? 1 : 0;
+                    _tabController.animateTo(targetIdx);
                   }
                 },
               );
@@ -363,7 +400,10 @@ class _OrderHistScreenState extends State<OrderHistScreen>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [_buildTabContent(), _buildTabContent()],
+              children: [
+                _buildTabContent(list: _orderList),
+                _buildTabContent(list: _cancelList),
+              ],
             ),
           ),
         ],
