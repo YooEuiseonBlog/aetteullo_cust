@@ -615,7 +615,7 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
                   ),
                 ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   const Icon(Icons.shopping_cart, color: Colors.green),
