@@ -75,7 +75,6 @@ Future<void> main() async {
   FirebaseMessaging.instance.getInitialMessage().then((msg) {
     if (msg != null) {
       print('🛠 앱 킬 상태 알림 클릭: ${msg.notification?.title}');
-      // TODO: Navigator.pushNamed(context, '/someRoute', arguments: msg.data);
     }
   });
 
