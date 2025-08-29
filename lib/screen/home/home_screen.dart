@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen>
           title: '로그아웃',
           content: '로그아웃을 하시겠습니까?',
           submitBtn: '로그아웃',
-          onOff: true, // 중요: 이 값을 true로 설정해야 실제 앱 종료됨
+          onOff: false, // 중요: 이 값을 true로 설정해야 실제 앱 종료됨
         );
       },
       child: Scaffold(

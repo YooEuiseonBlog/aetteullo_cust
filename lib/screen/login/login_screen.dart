@@ -161,9 +161,12 @@ class _LoginScreenState extends State<LoginScreen> {
     // 메인 컬러 설정
     const Color mainColor = Color(0xFF0cc377);
 
-    return WillPopScope(
-      onWillPop: () =>
-          showExitConfirmDialog(context, onExit: _onExit, onOff: true),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await showExitConfirmDialog(context, onExit: _onExit, onOff: true);
+      },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: Theme.of(context).colorScheme.primary,
