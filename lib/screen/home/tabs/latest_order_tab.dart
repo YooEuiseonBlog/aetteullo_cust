@@ -35,7 +35,7 @@ class _LatestOrderTabState extends State<LatestOrderTab> {
     setState(() => _isLoading = true);
     try {
       final items = await _itemService.getLatestPoItemList();
-      _orderItems = items;
+      _orderItems = items.map((item) => {...item, 'qty': 0.0}).toList();
     } catch (e) {
       debugPrint('Error loading LatestOrderItems: $e');
       if (mounted) {

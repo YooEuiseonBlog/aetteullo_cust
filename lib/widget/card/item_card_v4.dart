@@ -63,7 +63,7 @@ class _ItemCardV4State extends State<ItemCardV4> {
                       icon: Icon(
                         Icons.close,
                         size: 25,
-                        color: Colors.black.withOpacity(0.4),
+                        color: Colors.black.withValues(alpha: 0.4),
                       ),
                       onPressed: widget.onDelete,
                     ),
@@ -77,7 +77,7 @@ class _ItemCardV4State extends State<ItemCardV4> {
                     icon: Icon(
                       Icons.info,
                       size: 25,
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                     ),
                     onPressed: widget.onClick,
                   ),

@@ -8,6 +8,7 @@ import 'package:aetteullo_cust/screen/deli/deli_screen.dart';
 import 'package:aetteullo_cust/screen/home/home_screen.dart';
 import 'package:aetteullo_cust/screen/login/login_screen.dart';
 import 'package:aetteullo_cust/screen/mypage/my_page_screen.dart';
+import 'package:aetteullo_cust/screen/notice/notice_screen.dart';
 import 'package:aetteullo_cust/screen/orderhist/order_hist_screen.dart';
 import 'package:aetteullo_cust/screen/payment/payment_screen.dart';
 import 'package:aetteullo_cust/service/notification_service.dart';
@@ -15,7 +16,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
 import 'package:provider/provider.dart';
 
 @pragma('vm:entry-point')
@@ -34,6 +34,58 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
+// 권한 요청 상태를 추적하기 위한 전역 변수
+bool _isPermissionRequesting = false;
+
+Future<void> _initializeFirebaseMessaging() async {
+  try {
+    final messaging = FirebaseMessaging.instance;
+
+    // 이미 권한 요청이 진행 중이면 대기
+    if (_isPermissionRequesting) {
+      print('권한 요청이 이미 진행 중입니다. 대기 중...');
+      return;
+    }
+
+    _isPermissionRequesting = true;
+
+    // 현재 권한 상태 확인
+    NotificationSettings settings = await messaging.getNotificationSettings();
+    print('현재 알림 권한 상태: ${settings.authorizationStatus}');
+
+    // 권한이 결정되지 않은 경우에만 요청
+    if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+      print('알림 권한 요청 중...');
+      settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+        announcement: false,
+        carPlay: false,
+        criticalAlert: false,
+      );
+      print('권한 요청 완료: ${settings.authorizationStatus}');
+    } else {
+      print('권한이 이미 설정되어 있음: ${settings.authorizationStatus}');
+    }
+
+    // FCM 토큰 가져오기 (선택사항)
+    try {
+      String? token = await messaging.getToken();
+      if (token != null) {
+        print('FCM Token: ${token.substring(0, 20)}...');
+      }
+    } catch (e) {
+      print('FCM 토큰 가져오기 실패: $e');
+    }
+  } catch (e) {
+    print('Firebase Messaging 초기화 오류: $e');
+  } finally {
+    _isPermissionRequesting = false;
+  }
+}
+
 Future<void> main() async {
   // Flutter 엔진 초기화
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,42 +93,26 @@ Future<void> main() async {
   // HTTP override
   HttpOverrides.global = MyHttpOverrides();
 
-  // 1) Firebase 초기화
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    // 1) Firebase 초기화
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase 초기화 완료');
 
-  // 2) 백그라운드 메시지 핸들러 등록
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    // 2) 백그라운드 메시지 핸들러 등록
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // 3) iOS/Android 푸시 권한 요청
-  await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
+    // 3) 안전한 권한 요청 (중복 방지)
+    await _initializeFirebaseMessaging();
 
-  // 4) 로컬 노티피케이션 초기화
-  await NotificationService.instance.init();
-
-  // 5) 포그라운드 메시지 수신 시 로컬 알림 띄우기
-  FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
-    final notif = msg.notification;
-    if (notif != null) {
-      // ✅ 수정된 호출 (모두 named parameter)
-      NotificationService.instance.show(
-        id: notif.hashCode,
-        title: notif.title ?? '',
-        body: notif.body ?? '',
-        payload: msg.data['payload'],
-      );
-    }
-  });
-
-  // 6) 앱 종료 상태에서 알림 클릭 시 처리
-  FirebaseMessaging.instance.getInitialMessage().then((msg) {
-    if (msg != null) {
-      print('🛠 앱 킬 상태 알림 클릭: ${msg.notification?.title}');
-    }
-  });
+    // 4) 로컬 노티피케이션 초기화
+    await NotificationService.instance.init();
+    print('로컬 알림 서비스 초기화 완료');
+  } catch (e) {
+    print('초기화 오류 발생: $e');
+    // 오류가 발생해도 앱은 계속 실행되도록 함
+  }
 
   // 첫 진입 화면 설정 (로그인 또는 홈)
   Widget firstPage = const LoginScreen();
@@ -93,10 +129,63 @@ Future<void> main() async {
   );
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   final Color aetteulloGreen = const Color(0xFF0DA45F);
   final Widget homePage;
   const MainApp({super.key, required this.homePage});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  final Color aetteulloGreen = const Color(0xFF0DA45F);
+
+  @override
+  void initState() {
+    super.initState();
+    // 앱이 완전히 로드된 후 메시지 리스너 설정
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupMessageListeners();
+    });
+  }
+
+  void _setupMessageListeners() {
+    try {
+      // 5) 포그라운드 메시지 수신 시 로컬 알림 띄우기
+      FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
+        print('포그라운드 메시지 수신: ${msg.notification?.title}');
+        final notif = msg.notification;
+        if (notif != null) {
+          NotificationService.instance.show(
+            id: notif.hashCode,
+            title: notif.title ?? '',
+            body: notif.body ?? '',
+            payload: msg.data['payload'],
+          );
+        }
+      });
+
+      // 6) 백그라운드에서 알림 클릭 시 처리
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage msg) {
+        print('백그라운드 알림 클릭: ${msg.notification?.title}');
+        // TODO: 특정 화면으로 이동 로직 추가
+        // Navigator.pushNamed(context, '/someRoute', arguments: msg.data);
+      });
+
+      // 7) 앱 종료 상태에서 알림 클릭 시 처리
+      FirebaseMessaging.instance.getInitialMessage().then((msg) {
+        if (msg != null) {
+          print('앱 킬 상태 알림 클릭: ${msg.notification?.title}');
+          // TODO: Navigator.pushNamed(context, '/someRoute', arguments: msg.data);
+        }
+      });
+
+      print('메시지 리스너 설정 완료');
+    } catch (e) {
+      print('메시지 리스너 설정 오류: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +238,7 @@ class MainApp extends StatelessWidget {
           tabBarTheme: const TabBarThemeData(labelPadding: EdgeInsets.zero),
         ),
         navigatorObservers: [routeObserver],
-        home: homePage, // 자동로그인 분기 반영
+        home: widget.homePage, // 자동로그인 분기 반영
         routes: {
           '/login': (_) => const LoginScreen(),
           '/home': (_) => const HomeScreen(),
@@ -157,6 +246,7 @@ class MainApp extends StatelessWidget {
           '/payment': (_) => PaymentScreen(),
           '/orderhist': (_) => OrderHistScreen(),
           '/deli': (_) => DeliScreen(),
+          '/notice': (_) => NoticeScreen(),
         },
       ),
     );

@@ -269,8 +269,10 @@ class _ItemScreenState extends State<ItemScreen> {
                                 Container(
                                   width: 50,
                                   height: 50,
-                                  color: Colors.black.withOpacity(
-                                    selectedImageIndex == index ? 0.1 : 0.4,
+                                  color: Colors.black.withValues(
+                                    alpha: selectedImageIndex == index
+                                        ? 0.1
+                                        : 0.4,
                                   ),
                                 ),
                               ],
@@ -297,7 +299,7 @@ class _ItemScreenState extends State<ItemScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1), // 그림자 색상 및 투명도
+                    color: Colors.black.withValues(alpha: 0.1), // 그림자 색상 및 투명도
                     spreadRadius: 2, // 그림자의 확산 정도
                     blurRadius: 5, // 그림자의 흐림 정도
                     offset: const Offset(0, -1), // 그림자의 위치 조정 (x, y)
@@ -411,7 +413,7 @@ class _ItemScreenState extends State<ItemScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.15),
+        color: Colors.grey.withValues(alpha: 0.15),
         border: Border.all(style: BorderStyle.none),
         borderRadius: BorderRadius.circular(10),
       ),
@@ -425,7 +427,10 @@ class _ItemScreenState extends State<ItemScreen> {
                 }
               });
             },
-            child: Icon(Icons.remove, color: Colors.grey.withOpacity(0.5)),
+            child: Icon(
+              Icons.remove,
+              color: Colors.grey.withValues(alpha: 0.5),
+            ),
           ),
           const SizedBox(width: 6),
           Container(
@@ -437,7 +442,7 @@ class _ItemScreenState extends State<ItemScreen> {
                 BoxShadow(
                   blurRadius: 1,
                   spreadRadius: 1,
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                 ),
               ],
             ),
