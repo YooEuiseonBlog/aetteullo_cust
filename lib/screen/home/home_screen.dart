@@ -83,14 +83,21 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () => showExitConfirmDialog(
-        context,
-        onExit: _onExit,
-        title: '로그아웃',
-        content: '로그아웃을 하시겠습니까?',
-        submitBtn: '로그아웃',
-      ),
+    return PopScope(
+      canPop: false, // 기본적으로 pop을 막음
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return; // 이미 pop되었으면 리턴
+
+        // 다이얼로그 표시
+        await showExitConfirmDialog(
+          context,
+          onExit: _onExit,
+          title: '로그아웃',
+          content: '로그아웃을 하시겠습니까?',
+          submitBtn: '로그아웃',
+          onOff: true, // 중요: 이 값을 true로 설정해야 실제 앱 종료됨
+        );
+      },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: Colors.white,
