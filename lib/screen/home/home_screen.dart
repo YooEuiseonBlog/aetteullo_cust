@@ -7,6 +7,7 @@ import 'package:aetteullo_cust/screen/home/tabs/latest_order_tab.dart';
 import 'package:aetteullo_cust/screen/home/tabs/like_tab.dart';
 import 'package:aetteullo_cust/screen/home/tabs/promotion_tab.dart';
 import 'package:aetteullo_cust/service/common_service.dart';
+import 'package:aetteullo_cust/service/dio_service.dart';
 import 'package:aetteullo_cust/service/fcm_service.dart';
 import 'package:aetteullo_cust/widget/appbar/mobile_app_bar.dart';
 import 'package:aetteullo_cust/widget/navigationbar/mobile_bottom_navigation_bar.dart';
@@ -69,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final deviceId = await getDeviceId();
       _fcmService.deleteFcmToken(deviceId: deviceId!);
+      await DioCookieClient().logout();
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(
           context,
