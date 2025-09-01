@@ -81,13 +81,17 @@ class _SearchRstScreenState extends State<SearchRstScreen> with RouteAware {
 
   @override
   void didPopNext() {
-    // 다른 화면에서 되돌아올 때, 선택된 아이템 모두 초기화
-    setState(() {
-      for (final key in _cardKeys) {
-        ItemCardV2.resetByKey(key);
-      }
-      _selectedItems.clear();
-    });
+    // 1. 실제 데이터의 qty를 0으로 초기화
+    for (var item in _items) {
+      item['qty'] = 0.0;
+    }
+
+    // 2. 카드 UI도 리셋
+    for (final key in _cardKeys) {
+      ItemCardV2.resetByKey(key);
+    }
+
+    setState(() {}); // UI 업데이트
   }
 
   @override
@@ -337,15 +341,26 @@ class _SearchRstScreenState extends State<SearchRstScreen> with RouteAware {
                         );
                         return;
                       }
+
                       await _addBasketItems();
-                      if (mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const BasketScreen(),
-                          ),
-                        );
+
+                      if (!mounted) return;
+
+                      // 1. 실제 데이터의 qty를 0으로 초기화
+                      for (var item in _items) {
+                        item['qty'] = 0.0;
                       }
+
+                      // 2. 카드 UI도 리셋
+                      for (final key in _cardKeys) {
+                        ItemCardV2.resetByKey(key);
+                      }
+
+                      setState(() {}); // UI 업데이트
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('선택된 품목을 장바구니에 추가하였습니다.')),
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(

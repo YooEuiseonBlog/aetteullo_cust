@@ -92,7 +92,6 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
 
   @override
   void didPopNext() {
-    super.didPopNext();
     // 1. 실제 데이터의 qty를 0으로 초기화
     for (var item in _items) {
       item['qty'] = 0.0;
