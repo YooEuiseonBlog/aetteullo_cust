@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:aetteullo_cust/function/etc.dart';
 import 'package:aetteullo_cust/function/format_utils.dart';
 import 'package:aetteullo_cust/observer/route_observer.dart';
-import 'package:aetteullo_cust/screen/basket/basket_screen.dart';
 import 'package:aetteullo_cust/screen/item/item_screen.dart';
 import 'package:aetteullo_cust/service/basket_service.dart';
 import 'package:aetteullo_cust/service/category_service.dart';
@@ -41,6 +40,7 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
 
   // ─── 추가: 검색(로딩) 상태 플래그
   bool _isLoading = false;
+  bool _submitting = false;
 
   // ① 선택된 카테고리와 가격 범위를 상태로 추가
   final List<Map<String, dynamic>> _selectedCategories = [];
@@ -93,14 +93,17 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
   @override
   void didPopNext() {
     super.didPopNext();
-    // 뒤에서 돌아올 때 한 번에 리셋
+    // 1. 실제 데이터의 qty를 0으로 초기화
+    for (var item in _items) {
+      item['qty'] = 0.0;
+    }
+
+    // 2. 카드 UI도 리셋
     for (final key in _cardKeys) {
       ItemCardV2.resetByKey(key);
     }
 
-    setState(() {
-      _selectedItems.clear();
-    });
+    setState(() {}); // UI 업데이트
 
     _applyFilters();
     if (widget.ctgry == '전체' || widget.ctgry == null) {
@@ -152,9 +155,9 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
   }
 
   Future<void> _addBasketItems() async {
-    if (_isLoading) return;
+    if (_submitting) return;
     setState(() {
-      _isLoading = true;
+      _submitting = true;
     });
     try {
       await _basketService.saveBasketItems(
@@ -170,7 +173,7 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
       }
     } finally {
       setState(() {
-        _isLoading = false;
+        _submitting = false;
       });
     }
   }
@@ -630,16 +633,26 @@ class _OrderListScreenState extends State<OrderListScreen> with RouteAware {
                         );
                         return;
                       }
+
                       await _addBasketItems();
 
-                      if (mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const BasketScreen(),
-                          ),
-                        );
+                      if (!mounted) return;
+
+                      // 1. 실제 데이터의 qty를 0으로 초기화
+                      for (var item in _items) {
+                        item['qty'] = 0.0;
                       }
+
+                      // 2. 카드 UI도 리셋
+                      for (final key in _cardKeys) {
+                        ItemCardV2.resetByKey(key);
+                      }
+
+                      setState(() {}); // UI 업데이트
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('선택된 품목을 장바구니에 추가하였습니다.')),
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
